@@ -100,3 +100,50 @@ def main():
 
     tool.set_interpolation_strategy(interpolator)
     tool.assign_values(input_values)
+    
+    
+        def assign_values_from_spiral_id(self, spiral_id_values):
+        """
+        螺旋IDをキーとしてピンに値を割り当てる
+
+        Args:
+            spiral_id_values (dict): 螺旋IDをキー、値を値とする辞書
+        """
+        for spiral_id, value in spiral_id_values.items():
+            pin = self.grid.get_pin_by_spiral_id(spiral_id)
+            if pin:
+                pin.value = value
+            else:
+                print(f"警告: 螺旋ID {spiral_id} に対応するピンが見つかりません。")
+
+
+def main():
+    # ... (省略)
+
+    # 値の割り当て方法の選択
+    value_assignment_choice = input("値の割り当て方法を選択してください（1: 補間, 2: 螺旋IDから割り当て）[1]: ") or "1"
+
+    if value_assignment_choice == "1":
+        # 補間処理
+        # ... (既存の補間処理)
+        pass
+    elif value_assignment_choice == "2":
+        # 螺旋IDから割り当て
+        try:
+            num_pins = len(tool.grid.pins)
+            spiral_id_values = {}
+            print(f"各ピンの値を螺旋ID順に入力してください (ピン総数: {num_pins}):")
+            for i in range(num_pins):
+                value = float(input(f"  螺旋ID {i} の値: "))
+                spiral_id_values[i] = value
+        except ValueError:
+            print("入力が無効です。値の割り当てをスキップします。")
+            spiral_id_values = {}
+
+        tool.assign_values_from_spiral_id(spiral_id_values)
+    else:
+        print("無効な選択です。値の割り当てをスキップします。")
+
+    # ... (出力処理など)
+
+
