@@ -1,3 +1,84 @@
+    def visualize_axial_distribution(self, z_positions, filename=None, title=None):
+        """
+        ピン配置と軸方向分布の可視化
+
+        Args:
+            z_positions (list): 軸方向の位置リスト
+            filename (str): 保存するファイル名（Noneの場合は保存しない）
+            title (str): グラフのタイトル
+
+        Returns:
+            matplotlib.figure.Figure: 作成した図
+        """
+
+        fig, ax = plt.subplots(figsize=(10, 8))
+
+        # 六角形のピンを描画
+        for pin in self.grid.pins:
+            x, y = pin.coordinates
+            hex_radius = self.grid.pitch / 2 * 0.9
+            hexagon = RegularPolygon((x, y), numVertices=6, radius=hex_radius,
+                                    orientation=0, alpha=0.7, edgecolor='k')
+            ax.add_patch(hexagon)
+
+            # 軸方向分布をプロット
+            if pin.value is not None and isinstance(pin.value, list):
+                # プロット位置を調整
+                text_x = x + self.grid.pitch * 0.6
+                text_y = y - self.grid.pitch * 0.6
+                ax.text(text_x, text_y, f"S:{pin.id}", ha='left', va='top', fontsize=6)  # IDを小さく表示
+                for i, z in enumerate(z_positions):
+                    val = pin.value[i]
+                    ax.plot([x, x + self.grid.pitch * 0.5], [y - i * self.grid.pitch * 0.1, y - i * self.grid.pitch * 0.1], marker='o', markersize=2, color='r')
+                    ax.text(x + self.grid.pitch * 0.55, y - i * self.grid.pitch * 0.1, f"{val:.1f}", ha='left', va='center', fontsize=6)
+
+        # グラフの設定
+        ax.set_aspect('equal')
+        ax.autoscale_view()
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+
+        if title:
+            ax.set_title(title)
+        else:
+            ax.set_title('ピン配置と軸方向分布')
+
+        # ファイルに保存
+        if filename:
+            plt.savefig(filename, dpi=300, bbox_inches='tight')
+
+        plt.tight_layout()
+        return fig
+
+
+    # 可視化
+    visualize = input("ピン配置を可視化しますか？（y/n）[y]: ") or "y"
+    if visualize.lower() == "y":
+        show_values = input("代表点値を表示しますか？（y/n）[y]: ") or "y"
+        show_values = show_values.lower() == "y"
+
+        # IDマップの可視化
+        id_fig = tool.visualize(show_values=False, filename=os.path.join(output_dir, "pin_id_map.png"),
+                               title="ピン配置とID（S:螺旋ID, C:サブチャンネルID）")
+
+        if show_values:
+            if value_assignment_choice == "1" and interpolation_choice == "2":
+                # 軸方向分布の可視化
+                tool.visualize_axial_distribution(input_values["z_positions"], filename=os.path.join(output_dir, "pin_axial_distribution.png"),
+                                                title="ピン配置と軸方向分布")
+            else:
+                # 値の可視化
+                val_fig = tool.visualize(show_values=True, filename=os.path.join(output_dir, "pin_value_map.png"),
+                                       title="ピン配置と代表点値")
+
+        print(f"可視化画像が出力されました: {output_dir}ディレクトリ")
+
+        # 表示
+        plt.show()
+
+
+
+
 class SevenPointInterpolation(InterpolationStrategy):
     """7点補間による値の割り当て (軸方向分布対応)"""
 
