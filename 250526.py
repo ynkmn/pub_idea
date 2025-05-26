@@ -1,4 +1,11 @@
 
+import re
+
+s = "data_1_2_3_4"
+result = re.sub(r'(data|value)_([\d_]+)', lambda m: f"{m.group(1)}({m.group(2).replace('_', ',')})", s)
+print(result)  # 出力: data(1,2,3,4)
+
+
 
 import re
 
