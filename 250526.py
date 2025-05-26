@@ -1,3 +1,11 @@
+import re
+
+s = "data(1,2,3,4)"
+result = re.sub(r'data\(([\d,]+)\)', lambda m: "data_" + m.group(1).replace(',', '_'), s)
+print(result)  # 出力: data_1_2_3_4
+
+
+
 from abc import ABC, abstractmethod
 from typing import Dict, List, Any, Type
 import yaml
