@@ -1,3 +1,17 @@
+
+
+import re
+
+s = "data(1,2,3,4)"
+result = re.sub(r'(data|value)\(([\d,]+)\)', lambda m: f"{m.group(1)}_" + m.group(2).replace(',', '_'), s)
+print(result)  # 出力: data_1_2_3_4
+
+s2 = "value(5,6,7)"
+result2 = re.sub(r'(data|value)\(([\d,]+)\)', lambda m: f"{m.group(1)}_" + m.group(2).replace(',', '_'), s2)
+print(result2)  # 出力: value_5_6_7
+
+
+
 import re
 
 s = "data(1,2,3,4)"
