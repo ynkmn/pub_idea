@@ -1,3 +1,26 @@
+cmake_minimum_required(VERSION 3.20)
+project(MyFortranProject LANGUAGES Fortran)
+
+add_executable(my_program src/main.f90)
+
+# Fortran コンパイラのパス（フルパス）を取得
+message(STATUS "Fortran compiler: ${CMAKE_Fortran_COMPILER}")
+
+# 分岐によるフラグ設定
+if(CMAKE_Fortran_COMPILER MATCHES "ifx$")
+    message(STATUS "Using Intel ifx Fortran compiler")
+    target_compile_options(my_program PRIVATE -real-size 64)
+
+elseif(CMAKE_Fortran_COMPILER MATCHES "ifort$")
+    message(STATUS "Using Intel ifort Fortran compiler")
+    target_compile_options(my_program PRIVATE -real-size 64)
+
+else()
+    message(WARNING "Unknown Fortran compiler: ${CMAKE_Fortran_COMPILER}")
+endif()
+
+
+
 cmake_minimum_required(VERSION 3.15)
 project(YourFortranProject LANGUAGES Fortran)
 
