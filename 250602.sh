@@ -1,3 +1,19 @@
+string(TOLOWER "${CMAKE_Fortran_COMPILER}" fortran_compiler_lc)
+
+if(fortran_compiler_lc MATCHES "ifx(\\.exe)?$")
+    message(STATUS "Using Intel ifx Fortran compiler")
+    target_compile_options(my_program PRIVATE -real-size 64)
+
+elseif(fortran_compiler_lc MATCHES "ifort(\\.exe)?$")
+    message(STATUS "Using Intel ifort Fortran compiler")
+    target_compile_options(my_program PRIVATE -real-size 64)
+
+else()
+    message(WARNING "Unknown Fortran compiler: ${CMAKE_Fortran_COMPILER}")
+endif()
+
+
+
 cmake_minimum_required(VERSION 3.20)
 project(MyFortranProject LANGUAGES Fortran)
 
