@@ -1,3 +1,121 @@
+cmake_minimum_required(VERSION 3.15)
+project(YourFortranProject LANGUAGES Fortran)
+
+# OneAPI環境をCMakeに認識させるための設定
+if(NOT DEFINED ENV{ONEAPI_ROOT})
+    message(FATAL_ERROR "ONEAPI_ROOT environment variable is not set. Please source the OneAPI environment script.")
+endif()
+
+# OneAPIのFortranコンパイラ (ifx) を使用するように設定
+set(CMAKE_Fortran_COMPILER ${ONEAPI_ROOT}/compiler/latest/bin/ifx)
+
+# MPIを有効にするかどうかを制御するオプション (前回のもの)
+option(ENABLE_MPI "Enable MPI support for the project" OFF)
+
+# ライセンスプログラムをビルドに含めるかどうかを制御するオプション
+# デフォルトはOFF (含めない)
+option(BUILD_LICENSE_PROGRAM "Build the license-related program" OFF)
+
+# --- ソースファイルの準備 ---
+# まず、プロジェクト内の全てのFortranソースファイルを取得
+file(GLOB_RECURSE ALL_PROJECT_SOURCES
+    src/*.f
+    src/*.f90
+    src/*.F90
+)
+
+# 最終的なビルドに含めるソースファイルのリストを初期化
+set(PROJECT_SOURCES "")
+
+# MPIの有効/無効に基づいてソースファイルを調整 (前回のロジック)
+if(ENABLE_MPI)
+    message(STATUS "MPI support is ENABLED.")
+    foreach(src_file IN LISTS ALL_PROJECT_SOURCES)
+        # 例: 非MPI関連のファイルを「除外」するロジック
+        if(NOT "${src_file}" MATCHES ".*non_mpi_module.f90$")
+            if(NOT "${src_file}" MATCHES ".*non_mpi_main.f90$")
+                list(APPEND PROJECT_SOURCES "${src_file}")
+            endif()
+        endif()
+    endforeach()
+
+    # MPIライブラリの検索とリンク
+    find_package(MPI REQUIRED Fortran)
+    if(MPI_FOUND)
+        message(STATUS "MPI Fortran found: ${MPI_Fortran_ADDITIONAL_INCLUDE_DIRS}")
+        target_link_libraries(your_fortran_app PRIVATE ${MPI_Fortran_LIBRARIES})
+        target_include_directories(your_fortran_app PRIVATE ${MPI_Fortran_ADDITIONAL_INCLUDE_DIRS})
+        target_compile_options(your_fortran_app PRIVATE ${MPI_Fortran_COMPILE_OPTIONS})
+    else()
+        message(FATAL_ERROR "MPI Fortran was not found, but ENABLE_MPI is ON.")
+    endif()
+
+else()
+    message(STATUS "MPI support is DISABLED.")
+    foreach(src_file IN LISTS ALL_PROJECT_SOURCES)
+        # 例: MPI関連のファイルを「除外」するロジック
+        if(NOT "${src_file}" MATCHES ".*mpi_module.f90$")
+            if(NOT "${src_file}" MATCHES ".*mpi_main.f90$")
+                list(APPEND PROJECT_SOURCES "${src_file}")
+            endif()
+        endif()
+    endforeach()
+
+endif()
+
+# --- ライセンスプログラムの条件付き追加 ---
+if(BUILD_LICENSE_PROGRAM)
+    message(STATUS "Building license program is ENABLED.")
+    # ライセンスプログラムのソースファイルをリストに追加
+    # 例: src/license_tool.f90 がライセンスプログラムの場合
+    list(APPEND PROJECT_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/license_tool.f90")
+
+    # もしライセンスプログラムが独自の実行ファイルの場合
+    # add_executable(license_tool "${CMAKE_CURRENT_SOURCE_DIR}/src/license_tool.f90")
+    # ここでは、メインのアプリケーションに含めることを想定
+else()
+    message(STATUS "Building license program is DISABLED.")
+    # ライセンスプログラムをビルドから明示的に除外する必要がある場合
+    # ただし、上のロジックで PROJECT_SOURCES を構築しているため、
+    # 基本的にここで改めて除外する必要はないことが多い
+    # 例: list(REMOVE_ITEM PROJECT_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/license_tool.f90")
+endif()
+
+# モジュールファイルの出力ディレクトリを設定
+set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules)
+file(MAKE_DIRECTORY ${CMAKE_Fortran_MODULE_DIRECTORY})
+
+# 実行可能ファイルをビルドする
+add_executable(your_fortran_app ${PROJECT_SOURCES})
+
+# コンパイラフラグの設定 (リリース/デバッグ)
+set(CMAKE_Fortran_FLAGS_RELEASE
+    "-O3" -xHost -ipo -ansi_alias -warn all
+    "-module ${CMAKE_Fortran_MODULE_DIRECTORY}" -gen-interfaces
+)
+set(CMAKE_Fortran_FLAGS_DEBUG
+    "-g" -O0 -check all -traceback -fpe0 -warn all
+    "-module ${CMAKE_Fortran_MODULE_DIRECTORY}" -gen-interfaces
+)
+
+# モジュールパスの追加
+target_include_directories(your_fortran_app PRIVATE ${CMAKE_Fortran_MODULE_DIRECTORY})
+
+# ifx (Intel Fortran Compiler) 特有のオプション
+target_compile_options(your_fortran_app PRIVATE -free -fixed)
+
+# CMakeビルドタイプの設定
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release CACHE STRING
+        "Choose the type of build, options are: Debug Release RelWithInfo MinSizeRel."
+        FORCE
+    )
+endif()
+
+message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
+
+
+
 string(TOLOWER "${CMAKE_Fortran_COMPILER}" fortran_compiler_lc)
 
 if(fortran_compiler_lc MATCHES "ifx(\\.exe)?$")
