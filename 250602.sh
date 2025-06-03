@@ -1,3 +1,11 @@
+# 一度リストから削除
+list(REMOVE_ITEM SRCS "${CMAKE_SOURCE_DIR}/path/to/module_a.f90")
+# 先頭に挿入
+list(INSERT SRCS 0 "${CMAKE_SOURCE_DIR}/path/to/module_a.f90")
+
+
+
+
 cmake_minimum_required(VERSION 3.15)
 project(YourFortranProject LANGUAGES Fortran)
 
