@@ -1,3 +1,68 @@
+import pymc as pm
+import pytensor.tensor as pt
+
+# 観測データ（例）
+# ... observed_reactivity, temp_data は事前に準備 ...
+
+# logp関数を定義
+def logp(observed_value, params, temp_data, sigma):
+    """
+    CustomDistのための対数確率関数
+    
+    Args:
+        observed_value: 観測データ (PyMCが自動で渡す)
+        params:         モデルの確率変数 (fuel_coef, coolant_coef)
+        temp_data:      その他の入力データ
+        sigma:          誤差の標準偏差
+    
+    Returns:
+        対数確率
+    """
+    # pytensor.Opを使って、外部のPython関数(run_fortran_simulator)をPyMCの計算グラフに組み込む
+    # このOpは、numpy配列を受け取り、numpy配列を返す関数をラップする
+    @pt.as_op(itypes=[pt.dvector], otypes=[pt.dvector])
+    def pymc_fortran_caller(p):
+        # この関数がMCMCの各ステップで実行される
+        predicted = run_fortran_simulator(p, temp_data)
+        if predicted is None:
+            # シミュレーション失敗時は非常に小さい尤度を返すため、
+            # 観測値と全く異なるダミー値を返す
+            return np.full_like(observed_value, -1e10)
+        return predicted
+
+    # ラップした関数を呼び出す
+    predicted_reactivity = pymc_fortran_caller(params)
+
+    # 観測値と予測値から対数尤度を計算
+    return pm.Normal.logp(observed_value, mu=predicted_reactivity, sigma=sigma)
+
+
+# PyMCモデルの定義
+with pm.Model() as model:
+    # パラメータの事前分布
+    fuel_coef = pm.Uniform("fuel_temp_coef", -5.0, 0.0)
+    coolant_coef = pm.Uniform("coolant_temp_coef", -3.0, 0.0)
+    
+    # パラメータを一つのベクトルにまとめる
+    # pt.stack はPyTensorの関数で、テンソルを結合する
+    params_vec = pt.stack([fuel_coef, coolant_coef])
+    
+    # 測定誤差の事前分布
+    sigma = pm.HalfNormal("sigma", sigma=10.0)
+
+    # CustomDistを使って尤度を定義
+    pm.CustomDist(
+        "likelihood",
+        params_vec,       # logpの第2引数(params)に渡される
+        temp_data,        # logpの第3引数(temp_data)に渡される
+        sigma,            # logpの第4引数(sigma)に渡される
+        logp=logp,
+        observed=observed_reactivity # logpの第1引数(observed_value)に渡される
+    )
+
+# MCMCサンプリングの実行
+with model:
+    idata = pm.sample()
 
 
 
