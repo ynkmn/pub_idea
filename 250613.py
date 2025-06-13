@@ -6,6 +6,76 @@ import matplotlib.pyplot as plt
 
 # --- 1. ブラックボックスとなる解析コード群（ユーザーが用意する部分） ---
 
+# @pm.pytensorf.as_op デコレータを使って、Python関数をPyTensorの演算に変換
+@pm.pytensorf.as_op(
+    # itypes: 入力変数の型を指定 (dscalar = double precision scalar)
+    itypes=[pt.dscalar, pt.dscalar], 
+    # otypes: 出力変数の型を指定 (dvector = double precision vector)
+    otypes=[pt.dvector]
+)
+def run_full_analysis(fuel_temp_coef, coolant_temp_coef):
+    """
+    MCMCの各ステップで呼び出される、全体のブラックボックス関数。
+    この関数自体は、純粋なPython/Numpyで記述する。
+    """
+    # ステップA: 温度係数を基に、解析コードを実行して温度分布を再評価
+    # 【重要】ここはユーザーの重い解析コードの呼び出しに相当
+    time = np.linspace(0, 100, 101)
+    base_fuel_temp = 300 + 50 * (1 - np.exp(-time / 20))
+    base_coolant_temp = 290 + 30 * (1 - np.exp(-time / 30))
+    
+    new_fuel_temp = base_fuel_temp * (1 + (fuel_temp_coef + 2.0) * 0.01)
+    new_coolant_temp = base_coolant_temp * (1 + (coolant_temp_coef + 1.5) * 0.01)
+    
+    # ステップB: 新しい温度分布と温度係数から、反応度を計算
+    predicted_reactivity = (fuel_temp_coef * new_fuel_temp) + (coolant_temp_coef * new_coolant_temp)
+    
+    # otypesで指定した通りのNumpy配列を返す
+    return predicted_reactivity.astype(np.float64)
+
+# --- 2. データの準備 ---
+# 「真の」反応度データ（観測データ）を一度だけ生成する
+true_fuel_temp_coef = -2.0
+true_coolant_temp_coef = -1.5
+# `run_full_analysis`はNumpy配列を返すので、そのままでOK
+true_reactivity = run_full_analysis(true_fuel_temp_coef, true_coolant_temp_coef)
+observed_reactivity = true_reactivity + np.random.normal(0, 10, len(true_reactivity))
+
+# --- 3. PyMCモデルの定義 ---
+# logp_funcは不要になり、モデルの記述が簡潔になる
+with pm.Model() as reactor_model_with_recalc:
+    # パラメータの事前分布を定義
+    fuel_temp_coef = pm.Uniform("fuel_temp_coef", lower=-5.0, upper=0.0)
+    coolant_temp_coef = pm.Uniform("coolant_temp_coef", lower=-3.0, upper=0.0)
+    sigma = pm.HalfNormal("sigma", sigma=20)
+
+    # デコレータで変換した関数をモデル内で直接呼び出す
+    predicted_reactivity = run_full_analysis(fuel_temp_coef, coolant_temp_coef)
+
+    # 尤度を定義
+    pm.Normal("likelihood", mu=predicted_reactivity, sigma=sigma, observed=observed_reactivity)
+
+# --- 4. サンプリングの実行 ---
+with reactor_model_with_recalc:
+    idata = pm.sample(1000, tune=500, cores=1, chains=2)
+
+# --- 5. 結果の確認 ---
+print(az.summary(idata, var_names=["fuel_temp_coef", "coolant_temp_coef", "sigma"]))
+az.plot_posterior(idata, var_names=["fuel_temp_coef", "coolant_temp_coef", "sigma"])
+plt.show()
+
+
+
+
+
+import pymc as pm
+import numpy as np
+import arviz as az
+import pytensor.tensor as pt
+import matplotlib.pyplot as plt
+
+# --- 1. ブラックボックスとなる解析コード群（ユーザーが用意する部分） ---
+
 def execute_thermal_analysis_code(fuel_temp_coef, coolant_temp_coef):
     """
     【重要】ここに、温度係数を入力として新しい温度分布を計算する、
