@@ -1,0 +1,1 @@
+“If you want your custom function to be differentiable, you should subclass Op and implement the grad method rather than using as_op.”
