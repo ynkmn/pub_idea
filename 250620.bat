@@ -1,3 +1,17 @@
+def objective(trial):
+    try:
+        # Fortranプログラムの実行
+        # ポスト処理（ファイル読み込みなど）
+        return 評価値
+    except FileNotFoundError:
+        # ファイルが見つからない場合は試行失敗として扱う
+        trial.set_user_attr("error", "file_not_found")
+        raise optuna.TrialPruned()  # または trial.fail()
+
+
+
+
+
 import argparse
 import multiprocessing
 import os # osモジュールをインポート
