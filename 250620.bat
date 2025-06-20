@@ -1,3 +1,17 @@
+
+from pathlib import Path
+
+folder = Path("対象フォルダのパス")
+threshold = 500 * 1024 * 1024  # 500MB（バイト単位）
+
+for file in folder.glob("*.dat"):
+    if file.is_file() and file.stat().st_size >= threshold:
+        file.unlink()  # ファイルを削除
+        print(f"削除: {file} ({file.stat().st_size / (1024*1024):.1f} MB)")
+
+
+
+
 import pandas as pd
 import os
 import time
