@@ -1,3 +1,41 @@
+import argparse
+import multiprocessing
+import os # osモジュールをインポート
+
+def run_bayesian_inference(parallel_num, template_dir):
+    print(f"ベイズ推定を開始します。並列数: {parallel_num}")
+    print(f"使用するテンプレートフォルダ: {template_dir}")
+
+    # テンプレートフォルダが存在するか、Python側でも念のため確認
+    if not os.path.isdir(template_dir):
+        print(f"エラー: 指定されたテンプレートフォルダ '{template_dir}' が見つからないか、ディレクトリではありません。")
+        return
+
+    # ここにベイズ推定のロジックを実装
+    # 例: multiprocessing.Pool を使用
+    with multiprocessing.Pool(processes=parallel_num) as pool:
+        # ダミーのタスク。実際にはテンプレートフォルダ内のファイルを読み込んだりする処理
+        results = pool.map(lambda x: x*x, range(parallel_num * 10))
+    print("ベイズ推定が完了しました。")
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="ベイズ推定プログラム")
+    parser.add_argument('--parallel', type=int, default=1,
+                        help='並列処理のコア数')
+    parser.add_argument('--template_dir', type=str, required=True, # 必須引数とする
+                        help='解析コードのテンプレートフォルダのパス')
+
+    args = parser.parse_args()
+    
+    if args.parallel <= 0:
+        print("エラー: 並列数は1以上の整数を指定してください。")
+    else:
+        run_bayesian_inference(args.parallel, args.template_dir)
+
+
+
+
+
 
 @echo off
 chcp 65001 > nul REM UTF-8 で表示する場合。バッチファイル自体もUTF-8 BOM付きで保存
