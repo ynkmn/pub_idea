@@ -1,3 +1,20 @@
+import pandas as pd
+import os
+import time
+
+df.to_csv("sample.csv")
+for _ in range(5):
+    if os.path.isfile("sample.csv"):
+        with open("sample.csv") as f:
+            # 処理
+        break
+    else:
+        time.sleep(0.1)
+else:
+    raise FileNotFoundError("sample.csvが見つかりません")
+
+
+
 def objective(trial):
     try:
         # Fortranプログラムの実行
