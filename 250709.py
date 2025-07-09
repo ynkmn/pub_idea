@@ -1,3 +1,11 @@
+import numpy as np
+
+s = "1,2,3,4,5"
+arr = np.fromstring(s, sep=',', dtype=int)
+print(arr)  # 出力: [1 2 3 4 5]
+
+
+
 with open('sample.csv', 'r', encoding='utf-8') as f:
     lines = f.readlines()
     last_line = lines[-1].strip()
