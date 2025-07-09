@@ -1,3 +1,61 @@
+import matplotlib.pyplot as plt
+import matplotlib.style as style
+
+# 日本語表示のための設定
+try:
+    plt.rcParams['font.family'] = 'Meiryo'
+except:
+    plt.rcParams['font.family'] = 'sans-serif' # Meiryoがない環境向けのフォールバック
+
+style.use('seaborn-v0_8-whitegrid')
+
+# --- 1. ダミーデータの作成 ---
+# 解析コードA (上端基準、z=0が上端)
+z_A_upper = np.linspace(0, 10, 11)  # 0mから10mまで1mおき
+T_A = 20 * np.exp(-z_A_upper / 5) + 10 * np.sin(z_A_upper) + 30  # 何らかの複雑な温度分布
+
+# 解析コードB (上端基準、全高H_B = 10m)
+total_height_B = 10.0
+z_B_upper = np.array([0.5, 1.5, 3.0, 5.0, 7.5, 9.5]) # Aとは異なるメッシュ
+
+# 解析コードC (下端基準、z=0が下端)
+z_C_lower = np.linspace(0, 10, 51) # 0.2mおきの細かいメッシュ
+
+# --- 2. クラスのインスタンス化とメソッドの実行 ---
+# Aのデータで初期化
+interpolator = ThermalProfileInterpolator(z_A_upper, T_A)
+
+# ステップ1: AのデータからBのz座標における温度を補間
+T_B_upper_interpolated = interpolator.interpolate_to_B_upper(z_B_upper)
+
+# ステップ2: Bのデータを下端基準に変換し、Cのz座標で補間
+T_C_lower_interpolated = interpolator.transform_B_and_interpolate_to_C_lower(total_height_B, z_C_lower)
+
+# --- 3. 結果の可視化 ---
+fig, ax = plt.subplots(figsize=(10, 8))
+
+# 元データ (A) をプロット
+ax.plot(T_A, z_A_upper, 'o-', c='blue', label='解析A: 元データ (上端基準)', markersize=8)
+
+# Bで補間した点をプロット
+ax.plot(T_B_upper_interpolated, z_B_upper, 's', c='red', label='解析B: 補間点 (上端基準)', markersize=10, alpha=0.8)
+
+# Cで補間した結果をプロット (比較のため上端基準に変換してプロット)
+z_C_upper_for_plot = total_height_B - z_C_lower
+ax.plot(T_C_lower_interpolated, z_C_upper_for_plot, '--', c='green', label='解析C: 最終結果 (上端基準で表示)')
+
+ax.set_xlabel('温度 T [°C]', fontsize=14)
+ax.set_ylabel('上端基準 Z座標 [m]', fontsize=14)
+ax.set_title('異なる解析コード間の温度プロファイル補間', fontsize=16)
+ax.invert_yaxis()  # Z=0を上にする
+ax.legend(fontsize=12)
+ax.grid(True)
+
+plt.show()
+
+
+
+
 import numpy as np
 from scipy.interpolate import interp1d
 
