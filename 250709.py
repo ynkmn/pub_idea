@@ -1,3 +1,11 @@
+with open('sample.csv', 'r', encoding='utf-8') as f:
+    lines = f.readlines()
+    last_line = lines[-1].strip()
+    print(last_line)
+
+
+
+
 import matplotlib.pyplot as plt
 import matplotlib.style as style
 
