@@ -1,3 +1,7 @@
+"terminal.integrated.fontFamily": "Meiryo, 'Noto Sans Mono CJK JP', monospace"
+
+
+
 def read_until_slash_line(filepath):
     lines = []
 
