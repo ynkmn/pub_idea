@@ -20,3 +20,16 @@ for s in summaries:
 # スタディの情報を確認
 print("Best trial:")
 print(study.best_trial)
+
+
+import matplotlib.pyplot as plt
+
+df = study.trials_dataframe()
+
+plt.plot(df["number"], df["value"], marker="o")
+plt.xlabel("Trial")
+plt.ylabel("Objective Value (Error)")
+plt.title("Error History")
+plt.show()
+
+
